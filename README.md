@@ -4,6 +4,13 @@ There are a lots of good options if you want to run a [RabbitMQ](https://hub.doc
 
 The main benifit with this approach is that you can use [any version](https://hub.docker.com/r/library/rabbitmq/tags/) of RabbitMQ, which is maintaied by docker and will be up-to-date with future releases.
 
+## NOTE
+
+在 `Windows` 环境下使用 `git clone` 之前，需要将 `git` 的 `autocrlf` 设置为 false。
+> git config --global core.autocrlf false
+
+因为拷贝到 `Windows` 本地的 sh 的字符集与 `Linux` 不同，可以通过 `cat -v cluster-entrypoint.sh` 查看，未设置 `core.autocrlf` 情况下，会多出很多的 `^M` 字符，导致在 docker 内执行时失败。
+
 ## Install
 
 ```
