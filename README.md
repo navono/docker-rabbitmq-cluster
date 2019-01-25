@@ -38,3 +38,67 @@ It should be fairly easy to add a [`port mapping`](https://docs.docker.com/compo
 ## Read more
 
 I wrote [a blog post](http://fellowdeveloper.se/2017/05/24/cluster-rabbitmq-in-docker/) that explains some of the ideas behind this repo.
+
+---
+
+## 手动部署集群
+
+启动 RabbitMQ 实例：
+> docker run -d --hostname rabbit1 --name myrabbit1 -p 15672:15672 -p 5672:5672 -e RABBITMQ_ERLANG_COOKIE='rabbitcookie' rabbitmq:3-management
+>
+> docker run -d --hostname rabbit2 --name myrabbit2 -p 5673:5672 --link myrabbit1:rabbit1 -e RABBITMQ_ERLANG_COOKIE='rabbitcookie' rabbitmq:3-management
+>
+> docker run -d --hostname rabbit3 --name myrabbit3 -p 5674:5672 --link myrabbit1:rabbit1 --link myrabbit2:rabbit2 -e RABBITMQ_ERLANG_COOKIE='rabbitcookie' rabbitmq:3-management
+
+设置节点1：
+
+```script
+docker exec -it myrabbit1 bash
+rabbitmqctl stop_app
+rabbitmqctl reset
+rabbitmqctl start_app
+exit
+```
+
+删除 `guest` 用户
+> docker exec myrabbit1 rabbitmqctl delete_user guest
+
+创建 `vhost`
+> docker exec myrabbit1 rabbitmqctl add_vhost /
+
+创建用户
+
+```scripts
+# Admin user
+docker exec myrabbit1 rabbitmqctl add_user josuelima MyPassword999
+docker exec myrabbit1 rabbitmqctl set_user_tags josuelima administrator
+
+# Application user
+docker exec myrabbit1 rabbitmqctl add_user ruby_app SuperPassword000
+docker exec myrabbit1 rabbitmqctl set_permissions -p / ruby_app ".*" ".*" ".*"
+```
+
+设置节点2，加入到集群：
+
+```script
+docker exec -it myrabbit2 bash
+rabbitmqctl stop_app
+rabbitmqctl reset
+rabbitmqctl join_cluster --ram rabbit@rabbit1
+rabbitmqctl start_app
+exit
+```
+
+
+设置节点3，加入到集群：
+
+```script
+docker exec -it myrabbit3 bash
+rabbitmqctl stop_app
+rabbitmqctl reset
+rabbitmqctl join_cluster --ram rabbit@rabbit1
+rabbitmqctl start_app
+exit
+```
+
+访问：localhost:15672，默认账号密码：guest/guest
